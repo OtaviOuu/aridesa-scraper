@@ -88,9 +88,12 @@ func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
 	if len(matches) > 0 {
 		match := matches[0]
 
+		subject := strings.TrimSpace(strings.ReplaceAll(lectureDoc.Find(".mobile-header-title.expandable").First().Text(), "\n", ""))
+		formatedSubject := strings.Split(subject, "        ")[0]
+
 		insertStruct(&Lecture{
 			Module:  strings.TrimSpace(moduleTitle),
-			Subject: strings.TrimSpace(strings.ReplaceAll(lectureDoc.Find(".mobile-header-title.expandable").First().Text(), "\n", "")),
+			Subject: formatedSubject,
 			Title:   strings.TrimSpace(lectureDoc.Find("title").Text()),
 			Link:    strings.TrimSpace(strings.ReplaceAll(match, "\\\"", "")),
 			Year:    2023,
