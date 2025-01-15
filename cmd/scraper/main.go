@@ -18,6 +18,7 @@ type Lecture struct {
 	Title   string
 	Link    string
 	Year    int
+	Pdf     string
 }
 
 func parse(url string, header map[string]string) *goquery.Document {
@@ -89,23 +90,22 @@ func insertStruct(data *Lecture) {
 }
 
 func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
+	l := &Lecture{}
 	re := regexp.MustCompile(`https?://(www\.)?(youtube\.com|youtu\.be)/[^\s]+`)
 	matches := re.FindAllString(lectureDoc.Text(), -1)
 	if len(matches) > 0 {
-		for _, match := range matches {
+		match := matches[0]
 
-			l := &Lecture{
-				Subject: strings.TrimSpace(strings.ReplaceAll(lectureDoc.Find(".mobile-header-title.expandable").First().Text(), "\n", "")),
-				Module:  strings.TrimSpace(moduleTitle),
-				Title:   strings.TrimSpace(lectureDoc.Find("title").Text()),
-				Link:    strings.TrimSpace(strings.ReplaceAll(match, "\\", "")),
-				Year:    2023,
-			}
+		l.Link = strings.TrimSpace(strings.ReplaceAll(match, "\\\"", ""))
+		l.Subject = strings.TrimSpace(strings.ReplaceAll(lectureDoc.Find(".mobile-header-title.expandable").First().Text(), "\n", ""))
+		l.Module = strings.TrimSpace(moduleTitle)
+		l.Title = strings.TrimSpace(lectureDoc.Find("title").Text())
+		l.Year = 2023
 
-			insertStruct(l)
-		}
+		insertStruct(l)
+
 	} else {
-		log.Println("Pdf content")
+		// Todo: Download PDF
 	}
 }
 
