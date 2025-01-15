@@ -13,12 +13,13 @@ import (
 )
 
 type Lecture struct {
-	Subject string
-	Module  string
-	Title   string
-	Link    string
-	Year    int
-	Pdf     string
+	Subject string `json:"subject,omitempty"`
+	Module  string `json:"module,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Link    string `json:"link,omitempty"`
+	Year    int    `json:"year,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Pdf     string `json:"pdf,omitempty"`
 }
 
 func parse(url string, header map[string]string) *goquery.Document {
@@ -100,13 +101,13 @@ func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
 		l.Subject = strings.TrimSpace(strings.ReplaceAll(lectureDoc.Find(".mobile-header-title.expandable").First().Text(), "\n", ""))
 		l.Module = strings.TrimSpace(moduleTitle)
 		l.Title = strings.TrimSpace(lectureDoc.Find("title").Text())
+		l.Type = "video"
 		l.Year = 2023
 
-		insertStruct(l)
-
 	} else {
-		// Todo: Download PDF
+		// Todo:
 	}
+	insertStruct(l)
 }
 
 func main() {
