@@ -74,14 +74,11 @@ func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
 	matches := re.FindAllString(lectureDoc.Text(), -1)
 	if len(matches) > 0 {
 		for _, match := range matches {
-			subject := strings.TrimSpace(lectureDoc.Find(".mobile-header-title.expandable").First().Text())
-			module := strings.TrimSpace(moduleTitle)
-			title := strings.TrimSpace(lectureDoc.Find("title").Text())
 
 			l := &Lecture{
-				Subject: strings.Trim(subject, "\n"),
-				Module:  strings.Trim(module, "\n"),
-				Title:   strings.Trim(title, "\n"),
+				Subject: lectureDoc.Find(".mobile-header-title.expandable").First().Text(),
+				Module:  moduleTitle,
+				Title:   lectureDoc.Find("title").Text(),
 				Link:    match,
 				Year:    2023,
 			}
