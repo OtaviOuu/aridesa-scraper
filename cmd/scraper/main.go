@@ -8,11 +8,10 @@ import (
 	"regexp"
 	"strings"
 
+	mongoClient "github.com/OtaviOuu/aridesa-scraper/internal/mongo"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Lecture struct {
@@ -22,8 +21,9 @@ type Lecture struct {
 	Link    string `json:"link,omitempty"`
 	Year    int    `json:"year,omitempty"`
 	Type    string `json:"type,omitempty"`
-	Pdf     string `json:"pdf,omitempty"`
 }
+
+var client *mongo.Client
 
 func parse(url string, header map[string]string) *goquery.Document {
 	req, err := http.NewRequest("GET", url, nil)
@@ -73,49 +73,42 @@ func getModulesData(moduleDoc *goquery.Selection) {
 	})
 }
 
-func getMongoClient() (*mongo.Client, error) {
-	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI("mongodb+srv://admin:admin@cluster0.silc2.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0").SetServerAPIOptions(serverAPI)
-	client, err := mongo.Connect(context.TODO(), opts)
+func insertStruct(lecture *Lecture) {
+	collection := client.Database("scraper-ita").Collection("resourses")
+	insertResult, err := collection.InsertOne(context.Background(), lecture)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
-	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
-		panic(err)
-	}
-	return client, nil
+	log.Println(insertResult.InsertedID)
 }
 
 func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
-	l := &Lecture{}
 	re := regexp.MustCompile(`https?://(www\.)?(youtube\.com|youtu\.be)/[^\s]+`)
 	matches := re.FindAllString(lectureDoc.Text(), -1)
 	if len(matches) > 0 {
 		match := matches[0]
 
-		l.Link = strings.TrimSpace(strings.ReplaceAll(match, "\\\"", ""))
-		l.Subject = strings.TrimSpace(strings.ReplaceAll(lectureDoc.Find(".mobile-header-title.expandable").First().Text(), "\n", ""))
-		l.Module = strings.TrimSpace(moduleTitle)
-		l.Title = strings.TrimSpace(lectureDoc.Find("title").Text())
-		l.Type = "video"
-		l.Year = 2023
+		insertStruct(&Lecture{
+			Module:  strings.TrimSpace(moduleTitle),
+			Subject: strings.TrimSpace(strings.ReplaceAll(lectureDoc.Find(".mobile-header-title.expandable").First().Text(), "\n", "")),
+			Title:   strings.TrimSpace(lectureDoc.Find("title").Text()),
+			Link:    strings.TrimSpace(strings.ReplaceAll(match, "\\\"", "")),
+			Year:    2023,
+			Type:    "video",
+		})
 
 	} else {
 		// Todo:
 	}
-	insertStruct(l)
 }
 
 func main() {
 	err := godotenv.Load()
+	client = mongoClient.GetMongoClient()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
 	cookies := os.Getenv("COOKIES")
 	doc := parse("https://aridesa.instructure.com/courses", map[string]string{"Cookie": cookies})
 
