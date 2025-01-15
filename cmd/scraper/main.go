@@ -69,6 +69,25 @@ func getModulesData(moduleDoc *goquery.Selection) {
 	})
 }
 
+func insertStruct(data *Lecture) {
+	file, err := os.OpenFile("lectures.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	lectureJSON, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+
+	file.Write(lectureJSON)
+	_, err = file.Write([]byte("\n"))
+	if err != nil {
+		panic(err)
+	}
+}
+
 func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
 	re := regexp.MustCompile(`https?://(www\.)?(youtube\.com|youtu\.be)/[^\s]+`)
 	matches := re.FindAllString(lectureDoc.Text(), -1)
@@ -76,30 +95,14 @@ func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
 		for _, match := range matches {
 
 			l := &Lecture{
-				Subject: lectureDoc.Find(".mobile-header-title.expandable").First().Text(),
-				Module:  moduleTitle,
-				Title:   lectureDoc.Find("title").Text(),
-				Link:    match,
+				Subject: strings.TrimSpace(strings.ReplaceAll(lectureDoc.Find(".mobile-header-title.expandable").First().Text(), "\n", "")),
+				Module:  strings.TrimSpace(moduleTitle),
+				Title:   strings.TrimSpace(lectureDoc.Find("title").Text()),
+				Link:    strings.TrimSpace(strings.ReplaceAll(match, "\\", "")),
 				Year:    2023,
 			}
 
-			log.Printf("Subject: %s\nModule: %s\nTitle: %s\nLink: %s\nYear: %d\n", l.Subject, l.Module, l.Title, l.Link, l.Year)
-			file, err := os.OpenFile("lectures.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				panic(err)
-			}
-			defer file.Close()
-
-			lectureJSON, err := json.Marshal(l)
-			if err != nil {
-				panic(err)
-			}
-
-			file.Write(lectureJSON)
-			_, err = file.Write([]byte("\n"))
-			if err != nil {
-				panic(err)
-			}
+			insertStruct(l)
 		}
 	} else {
 		log.Println("Pdf content")
