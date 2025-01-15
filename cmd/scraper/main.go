@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/joho/godotenv"
@@ -36,6 +36,25 @@ func parse(url string, header map[string]string) *goquery.Document {
 	return doc
 }
 
+func getCoursesLinks(doc *goquery.Document) []string {
+	links := []string{}
+
+	doc.Find("tbody tr").Each(func(index int, item *goquery.Selection) {
+		link, _ := item.Find("a").Attr("href")
+		if strings.Contains(link, "/courses/") {
+			links = append(links, link)
+		}
+	})
+
+	return links
+}
+
+func getModulesData(moduleDoc *goquery.Selection) {
+	moduleTitle := moduleDoc.Find(".name").Text()
+	log.Println(moduleTitle)
+
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -44,5 +63,14 @@ func main() {
 	cookies := os.Getenv("COOKIES")
 	doc := parse("https://aridesa.instructure.com/courses", map[string]string{"Cookie": cookies})
 
-	fmt.Print(doc.Text())
+	coursesLinks := getCoursesLinks(doc)
+
+	for _, link := range coursesLinks {
+		url := "https://aridesa.instructure.com" + link
+		doc := parse(url, map[string]string{"Cookie": cookies})
+
+		doc.Find("#context_modules .item-group-condensed.context_module").Each(func(index int, item *goquery.Selection) {
+			getModulesData(item)
+		})
+	}
 }
