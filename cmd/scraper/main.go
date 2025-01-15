@@ -1,16 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/joho/godotenv"
 )
 
-type Video struct {
+type Lecture struct {
 	Subject string
 	Module  string
 	Title   string
@@ -58,19 +60,53 @@ func getCoursesLinks(doc *goquery.Document) []string {
 }
 
 func getModulesData(moduleDoc *goquery.Selection) {
-	moduleTitle := moduleDoc.Find(".name").Text()
+	moduleTitle := moduleDoc.Find(".ig-header-title.collapse_module_link.ellipsis").Text()
 	moduleDoc.Find(".ig-title.title.item_link").Each(func(index int, item *goquery.Selection) {
 		link, _ := item.Attr("href")
 		videoLectureLink := "https://aridesa.instructure.com" + link
 		lectureDoc := parse(videoLectureLink, map[string]string{"Cookie": os.Getenv("COOKIES")})
-
 		getLectureData(moduleTitle, lectureDoc)
 	})
-
 }
 
 func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
+	re := regexp.MustCompile(`https?://(www\.)?(youtube\.com|youtu\.be)/[^\s]+`)
+	matches := re.FindAllString(lectureDoc.Text(), -1)
+	if len(matches) > 0 {
+		for _, match := range matches {
+			subject := strings.TrimSpace(lectureDoc.Find(".mobile-header-title.expandable").First().Text())
+			module := strings.TrimSpace(moduleTitle)
+			title := strings.TrimSpace(lectureDoc.Find("title").Text())
 
+			l := &Lecture{
+				Subject: strings.Trim(subject, "\n"),
+				Module:  strings.Trim(module, "\n"),
+				Title:   strings.Trim(title, "\n"),
+				Link:    match,
+				Year:    2023,
+			}
+
+			log.Printf("Subject: %s\nModule: %s\nTitle: %s\nLink: %s\nYear: %d\n", l.Subject, l.Module, l.Title, l.Link, l.Year)
+			file, err := os.OpenFile("lectures.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				panic(err)
+			}
+			defer file.Close()
+
+			lectureJSON, err := json.Marshal(l)
+			if err != nil {
+				panic(err)
+			}
+
+			file.Write(lectureJSON)
+			_, err = file.Write([]byte("\n"))
+			if err != nil {
+				panic(err)
+			}
+		}
+	} else {
+		log.Println("Pdf content")
+	}
 }
 
 func main() {
