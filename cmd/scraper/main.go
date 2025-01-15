@@ -51,8 +51,22 @@ func getCoursesLinks(doc *goquery.Document) []string {
 
 func getModulesData(moduleDoc *goquery.Selection) {
 	moduleTitle := moduleDoc.Find(".name").Text()
-	log.Println(moduleTitle)
+	moduleDoc.Find(".ig-title.title.item_link").Each(func(index int, item *goquery.Selection) {
+		link, _ := item.Attr("href")
+		videoLectureLink := "https://aridesa.instructure.com" + link
+		lectureDoc := parse(videoLectureLink, map[string]string{"Cookie": os.Getenv("COOKIES")})
 
+		getLectureData(moduleTitle, lectureDoc)
+	})
+
+}
+
+func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
+	lectureTitle := lectureDoc.Find(".title").Text()
+	lectureDoc.Find(".video-js").Each(func(index int, item *goquery.Selection) {
+		videoLink, _ := item.Attr("src")
+		log.Println(moduleTitle, lectureTitle, videoLink)
+	})
 }
 
 func main() {
