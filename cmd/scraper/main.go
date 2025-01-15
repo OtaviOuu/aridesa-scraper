@@ -10,6 +10,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type Video struct {
+	Subject string
+	Module  string
+	Title   string
+	Link    string
+	Year    int
+}
+
 func parse(url string, header map[string]string) *goquery.Document {
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -62,11 +70,7 @@ func getModulesData(moduleDoc *goquery.Selection) {
 }
 
 func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
-	lectureTitle := lectureDoc.Find(".title").Text()
-	lectureDoc.Find(".video-js").Each(func(index int, item *goquery.Selection) {
-		videoLink, _ := item.Attr("src")
-		log.Println(moduleTitle, lectureTitle, videoLink)
-	})
+
 }
 
 func main() {
