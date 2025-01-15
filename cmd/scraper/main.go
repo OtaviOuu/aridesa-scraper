@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +10,9 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Lecture struct {
@@ -23,7 +26,6 @@ type Lecture struct {
 }
 
 func parse(url string, header map[string]string) *goquery.Document {
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		panic(err)
@@ -71,23 +73,22 @@ func getModulesData(moduleDoc *goquery.Selection) {
 	})
 }
 
-func insertStruct(data *Lecture) {
-	file, err := os.OpenFile("lectures.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func getMongoClient() (*mongo.Client, error) {
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	opts := options.Client().ApplyURI("mongodb+srv://admin:admin@cluster0.silc2.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0").SetServerAPIOptions(serverAPI)
+	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
-
-	lectureJSON, err := json.Marshal(data)
-	if err != nil {
+	defer func() {
+		if err = client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
+	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
 		panic(err)
 	}
-
-	file.Write(lectureJSON)
-	_, err = file.Write([]byte("\n"))
-	if err != nil {
-		panic(err)
-	}
+	return client, nil
 }
 
 func getLectureData(moduleTitle string, lectureDoc *goquery.Document) {
