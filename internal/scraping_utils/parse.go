@@ -2,7 +2,6 @@ package scrapingutils
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -44,14 +43,4 @@ func GetCoursesLinks(doc *goquery.Document) []string {
 	})
 
 	return links
-}
-
-func GetModulesData(moduleDoc *goquery.Selection) {
-	moduleTitle := moduleDoc.Find(".ig-header-title.collapse_module_link.ellipsis").Text()
-	moduleDoc.Find(".ig-title.title.item_link").Each(func(index int, item *goquery.Selection) {
-		link, _ := item.Attr("href")
-		videoLectureLink := "https://aridesa.instructure.com" + link
-		lectureDoc := scrape.Parse(videoLectureLink, map[string]string{"Cookie": os.Getenv("COOKIES")})
-		getLectureData(moduleTitle, lectureDoc)
-	})
 }

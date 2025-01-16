@@ -33,6 +33,7 @@ func main() {
 	}
 
 	cookies := os.Getenv("COOKIES")
+
 	doc := scrape.Parse("https://aridesa.instructure.com/courses", map[string]string{"Cookie": cookies})
 
 	coursesLinks := scrape.GetCoursesLinks(doc)
@@ -42,9 +43,19 @@ func main() {
 		doc := scrape.Parse(url, map[string]string{"Cookie": cookies})
 
 		doc.Find("#context_modules .item-group-condensed.context_module").Each(func(index int, item *goquery.Selection) {
-			scrape.GetModulesData(item)
+			getModulesData(item)
 		})
 	}
+}
+
+func getModulesData(moduleDoc *goquery.Selection) {
+	moduleTitle := moduleDoc.Find(".ig-header-title.collapse_module_link.ellipsis").Text()
+	moduleDoc.Find(".ig-title.title.item_link").Each(func(index int, item *goquery.Selection) {
+		link, _ := item.Attr("href")
+		videoLectureLink := "https://aridesa.instructure.com" + link
+		lectureDoc := scrape.Parse(videoLectureLink, map[string]string{"Cookie": os.Getenv("COOKIES")})
+		getLectureData(moduleTitle, lectureDoc)
+	})
 }
 
 func insertStruct(lecture *Lecture) {
