@@ -1,10 +1,6 @@
-# Aridesa Course Scraper
-
-A Go-based web scraper designed to collect and store course content from Aridesa's Canvas LMS platform. This tool specifically targets course materials for ITA (Instituto Tecnológico de Aeronáutica) and IME (Instituto Militar de Engenharia) preparation courses.
-
 ## Features
 
-- Scrapes course content from Aridesa's Canvas LMS
+- Scrapes course content from Canvas LMS
 - Extracts video lectures and their metadata
 - Stores data in MongoDB
 - Organized by subjects, modules, and lecture types
